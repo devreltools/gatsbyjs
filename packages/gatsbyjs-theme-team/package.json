@@ -1,0 +1,42 @@
+{
+  "name": "@devreltools/gatsbyjs-theme-team",
+  "version": "0.1.0",
+  "description": "GatsbyJS Theme for Providing DevRelTools Team Types",
+  "author": "David McKay <rawkode@pm.me>",
+  "homepage": "https://gitlab.com/devreltools/gatsbyjs#readme",
+  "license": "MIT",
+  "main": "lib/gatsbyjs-theme-team.js",
+  "directories": {
+    "lib": "lib",
+    "test": "__tests__"
+  },
+  "files": [
+    "lib"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/devreltools/gatsbyjs.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: run tests from root\" && exit 1"
+  },
+  "bugs": {
+    "url": "https://gitlab.com/devreltools/gatsbyjs/issues"
+  },
+  "peerDependencies": {
+    "gatsby": "^2.18.21",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0"
+  },
+  "dependencies": {
+    "gatsby-core-utils": "^1.0.26",
+    "gatsby-source-filesystem": "^2.1.46",
+    "remark-slug": "^5.1.2"
+  },
+  "devDependencies": {
+    "gatsby": "^2.18.21",
+    "prettier": "^1.19.1",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0"
+  }
+}
