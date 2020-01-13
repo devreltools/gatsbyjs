@@ -4,14 +4,36 @@ module.exports = themeOptions => {
   const options = withDefaults(themeOptions);
 
   return {
-    plugins: [
+    plugins: [{
+        resolve: `gatsby-plugin-mdx`,
+        options: {
+          extensions: [`.mdx`, `.md`],
+          gatsbyRemarkPlugins: [{
+              resolve: `gatsby-remark-images`,
+              options: {
+                maxWidth: 1380,
+                linkImagesToOriginal: false,
+              },
+            },
+            {
+              resolve: `gatsby-remark-copy-linked-files`
+            },
+            {
+              resolve: `gatsby-remark-smartypants`
+            },
+          ],
+          remarkPlugins: [require(`remark-slug`)],
+        },
+      },
       {
         resolve: `gatsby-source-filesystem`,
         options: {
-          path: options.teamMemberPath,
-          name: "team-member"
+          path: `${options.teamPath}/members`,
+          name: "Member"
         }
-      }
-    ].filter(Boolean)
+      },
+      `gatsby-transformer-sharp`,
+      `gatsby-plugin-sharp`,
+    ]
   };
 };
