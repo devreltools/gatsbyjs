@@ -29,6 +29,7 @@
     "react-dom": "^16.12.0"
   },
   "dependencies": {
+    "@devreltools/schema": "0.1.1",
     "gatsby-core-utils": "^1.0.26",
     "gatsby-source-filesystem": "^2.1.46",
     "remark-slug": "^5.1.2"
