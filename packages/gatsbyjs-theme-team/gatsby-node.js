@@ -1,120 +1,85 @@
-const fs = require(`fs`)
-const path = require(`path`)
-const mkdirp = require(`mkdirp`)
-const Debug = require(`debug`)
+const fs = require(`fs`);
+const path = require(`path`);
+const mkdirp = require(`mkdirp`);
+const Debug = require(`debug`);
+const { createContentDigest } = require(`gatsby-core-utils`);
+const { teamSchema } = require(`@devreltools/schema`);
+const frontmatter = require("front-matter");
+const uuid = require("uuid/v4");
 
+const debug = Debug(`@devreltools/gatsbyjs-theme-team`);
 
-const withDefaults = require(`./lib/default-options`);
-const {
-  teamSchema
-} = require(`@devreltools/schema`)
+const gatsbyTeamSchema = teamSchema.replace(
+  /type Member {/g,
+  "type Member implements Node {"
+);
 
-const gatsbyTeamSchema = teamSchema.replace(/type Member {/g, "type Member implements Node {");
+let publicPath;
+let contentPath;
 
-exports.createSchemaCustomization = ({
-  actions
-}) => {
-  const {
-    createTypes
-  } = actions;
+exports.onPreBootstrap = ({ store }, themeOptions) => {
+  const { program } = store.getState();
 
-  createTypes(gatsbyTeamSchema);
-};
+  publicPath = themeOptions.publicPath || `/team`;
+  contentPath = themeOptions.contentPath || `content/team`;
 
-exports.onPreBootstrap = ({
-  store
-}, themeOptions) => {
-  const {
-    program
-  } = store.getState()
-  const {
-    teamPath
-  } = withDefaults(themeOptions)
-
-  const debug = Debug(`@devreltools/gatsbyjs-theme-team`);
-
-  const dirs = [
-    path.join(program.directory, teamPath, 'members')
-  ]
+  const dirs = [path.join(program.directory, contentPath, "members")];
 
   debug({
-    'function': 'required-directories',
-    'parameters': [dirs]
-  })
+    function: "required-directories",
+    parameters: [dirs]
+  });
 
   dirs.forEach(dir => {
     if (!fs.existsSync(dir)) {
       debug({
-        'function': 'mkdirp',
-        'parameters': [dir]
-      })
-      mkdirp.sync(dir)
+        function: "mkdirp",
+        parameters: [dir]
+      });
+      mkdirp.sync(dir);
     }
-  })
-}
-
-exports.onCreateNode = async ({
-    node,
-    actions,
-    getNode,
-    createNodeId
-  },
-  themeOptions
-) => {
-  const {
-    createNode,
-    createParentChildLink
-  } = actions
-  const {
-    teamPath
-  } = withDefaults(themeOptions)
-
-  if (node.internal.type !== `Mdx`) {
-    return
-  }
-
-  const fileNode = getNode(node.parent)
-  const source = fileNode.sourceInstanceName
-
-  debug({
-    'function': 'createNode',
-    'parameters': [{
-      'source': source
-    }]
   });
+};
 
-  if (node.internal.type === `Mdx` && source === "Member") {
-    const filePath = createFilePath({
-      node: fileNode,
-      getNode,
-      basePath: contentPath,
-    })
+exports.createSchemaCustomization = ({ actions }) => {
+  const { createTypes } = actions;
 
-    slug = urlResolve(`${teamPath}/members`, filePath);
+  createTypes(gatsbyTeamSchema);
+};
 
-    slug = slug.replace(/\/*$/, `/`)
-    const fieldData = {
-      name: node.frontmatter.name,
-      email: node.frontmatter.email
-    }
+exports.onCreateNode = (
+  { node, actions, createNodeId, createContentDigest, getNode },
+  options
+) => {
+  const { createNode, createParentChildLink } = actions;
 
-    const mdxMember = createNodeId(`${node.id} >>> MdxMember`)
-    await createNode({
-      ...fieldData,
-      id: mdxMember,
-      parent: node.id,
-      children: [],
-      internal: {
-        type: `MdxMember`,
-        contentDigest: createContentDigest(fieldData),
-        content: JSON.stringify(fieldData),
-        description: `Mdx implementation of the Member interface`,
-      },
-    })
-
-    createParentChildLink({
-      parent: node,
-      child: getNode(mdxMember)
-    })
+  if (node.internal.type !== `File`) {
+    return;
   }
-}
+
+  if (!node.sourceInstanceName) {
+    return;
+  }
+
+  if (node.sourceInstanceName !== "Member") {
+    return;
+  }
+  const data = fs.readFileSync(`${node.dir}/${node.relativePath}`, "utf8");
+  const fields = frontmatter(data).attributes;
+
+  createNode({
+    id: uuid(),
+    parent: node.id,
+    description: fields.name,
+
+    name: fields.name,
+    email: fields.email,
+    handles: fields.handles,
+
+    children: [],
+    internal: {
+      type: `Member`,
+      contentDigest: createContentDigest("a-node-id")
+    }
+  });
+};
