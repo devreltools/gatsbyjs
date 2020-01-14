@@ -70,7 +70,7 @@ exports.onCreateNode = ({ node, actions, getNode }, options) => {
     basePath: contentPath
   });
 
-  const slug = urlResolve(publicPath, "member", filePath);
+  const slug = urlResolve(publicPath, "members", filePath);
 
   const attributes = frontmatter(data).attributes;
 
@@ -88,5 +88,63 @@ exports.onCreateNode = ({ node, actions, getNode }, options) => {
       type: `Member`,
       contentDigest: createContentDigest(fields)
     }
+  });
+};
+
+const MembersPage = require.resolve("./src/members/list/query");
+const MemberPage = require.resolve("./src/members/view/query.js");
+
+exports.createPages = async ({ graphql, actions, reporter }, themeOptions) => {
+  const { createPage } = actions;
+
+  const graphqlMembers = await graphql(`
+    {
+      allMember(sort: { fields: [name], order: ASC }, limit: 1000) {
+        edges {
+          node {
+            id
+            slug
+            name
+            email
+            handles {
+              github
+              gitlab
+              slack
+              twitter
+            }
+          }
+        }
+      }
+    }
+  `);
+
+  if (graphqlMembers.errors) {
+    reporter.panic(graphqlMembers.errors);
+  }
+
+  const { allMember } = graphqlMembers.data;
+  const members = allMember.edges;
+
+  members.forEach(({ node: member }, index) => {
+    const previous = index === member.length - 1 ? null : member[index + 1];
+    const next = index === 0 ? null : member[index - 1];
+
+    const { slug } = member;
+
+    createPage({
+      path: slug,
+      component: MemberPage,
+      context: {
+        id: member.id,
+        previousId: previous ? previous.node.id : undefined,
+        nextId: next ? next.node.id : undefined
+      }
+    });
+  });
+
+  createPage({
+    path: `${publicPath}/members`,
+    component: MembersPage,
+    context: {}
   });
 };
