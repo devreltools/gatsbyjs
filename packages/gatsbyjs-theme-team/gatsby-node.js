@@ -1,12 +1,12 @@
-const fs = require(`fs`);
-const path = require(`path`);
-const mkdirp = require(`mkdirp`);
 const Debug = require(`debug`);
-const { createContentDigest } = require(`gatsby-core-utils`);
-const { teamSchema } = require(`@devreltools/schema`);
 const frontmatter = require("front-matter");
+const fs = require(`fs`);
+const { urlResolve, createContentDigest } = require(`gatsby-core-utils`);
+const { createFilePath } = require(`gatsby-source-filesystem`);
+const mkdirp = require(`mkdirp`);
+const path = require(`path`);
 const uuid = require("uuid/v4");
-
+const { teamSchema } = require(`@devreltools/schema`);
 const debug = Debug(`@devreltools/gatsbyjs-theme-team`);
 
 const gatsbyTeamSchema = teamSchema.replace(
@@ -47,11 +47,8 @@ exports.createSchemaCustomization = ({ actions }) => {
   createTypes(gatsbyTeamSchema);
 };
 
-exports.onCreateNode = (
-  { node, actions, createNodeId, createContentDigest, getNode },
-  options
-) => {
-  const { createNode, createParentChildLink } = actions;
+exports.onCreateNode = ({ node, actions, getNode }, options) => {
+  const { createNode } = actions;
 
   if (node.internal.type !== `File`) {
     return;
@@ -64,22 +61,32 @@ exports.onCreateNode = (
   if (node.sourceInstanceName !== "Member") {
     return;
   }
+
   const data = fs.readFileSync(`${node.dir}/${node.relativePath}`, "utf8");
-  const fields = frontmatter(data).attributes;
+
+  const filePath = createFilePath({
+    node: node,
+    getNode,
+    basePath: contentPath
+  });
+
+  const slug = urlResolve(publicPath, "member", filePath);
+
+  const attributes = frontmatter(data).attributes;
+
+  const fields = { ...attributes, slug: slug };
 
   createNode({
     id: uuid(),
     parent: node.id,
     description: fields.name,
 
-    name: fields.name,
-    email: fields.email,
-    handles: fields.handles,
+    ...fields,
 
     children: [],
     internal: {
       type: `Member`,
-      contentDigest: createContentDigest("a-node-id")
+      contentDigest: createContentDigest(fields)
     }
   });
 };
